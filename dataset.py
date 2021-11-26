@@ -3,14 +3,18 @@ import torch
 import numpy as np
 import h5py
 import os
+
+
+path = r'D:\Nianfang\II_Lab\Lab3\data'
+
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, path, time_downsample_factor=1, num_channel=4,split='train'):
-        assert split in ['train','test','val'], f'Split parameters "{split}" must be either "train" , "test" or "val" .'
+    def __init__(self, time_downsample_factor=1, num_channel=4,split='train'):
+        assert split in ['train','test','val'], f'Split parameters "{split}" must be either "train" , "test" or "val". '
         self.num_channel = num_channel
         self.time_downsample_factor = time_downsample_factor
         self.eval_mode = False
         # Open the data file
-        self.data_path = os.path.join(path,f'dataset_{split}.h5')
+        self.data_path = os.path.join(path, f'dataset_{split}.h5')
         self.data = h5py.File(self.data_path, "r", libver='latest', swmr=True)
         
         data_shape = self.data["data"].shape
