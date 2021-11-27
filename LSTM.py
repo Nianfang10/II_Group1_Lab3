@@ -7,9 +7,9 @@ class LSTM(nn.Module):
 
         self.input_size = 4  # 4 bands
         self.hidden_size = 64
-        self.proj_size = 49  # 49 kinds of labels
+        self.proj_size = 52  # 52 kinds of labels
 
-        # self.codename = 'LSTM'
+        self.codename = 'LSTM'
         self.lstm = nn.LSTM(
             input_size=self.input_size,
             hidden_size=self.hidden_size,
@@ -18,11 +18,12 @@ class LSTM(nn.Module):
             batch_first=True,
         )
         # self.out = nn.Linear(64, 10)
-        self.out = nn.Linear(self.hidden_size, self.proj_size)
+        # self.out = nn.Linear(self.hidden_size, self.proj_size)
 
     def forward(self, x):
         r_out, (h_n, c_n) = self.lstm(x)  # r_out contains the output features (h_t) from the last layer of the LSTM
-        result = self.out(r_out[:, -1, :])
+        # result = self.out(r_out[:, -1, :])
+        result = r_out[:, -1, :]
         return result
 
 
