@@ -10,75 +10,79 @@ from torch.optim import Adam, lr_scheduler
 from tqdm import tqdm
 
 from dataset import Dataset
-from LSTM import LSTM, UpdatingMean
+from LSTM import LSTM
 import pdb
 # import wandb
 from datetime import datetime
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 512
 NUM_WORKERS = 0
 NUM_EPOCHS = 100
 CUDA_DEVICE = 'cuda:0'
 Learning_rate = 0.002
 
+class UpdatingMean():
+    def __init__(self) -> None:
+        self.sum = 0
+        self.n = 0
+
+    def mean(self):
+        return self.sum / self.n
+
+    def add(self,loss):
+        self.sum += loss
+        self.n += 1
+
 
 def compute_accuracy(output, labels):
     predictions = torch.argmax(output, dim=1)
 
-    return torch.mean(predictions.float())
+    return torch.mean((predictions == labels).float())
 
 
-def train_one_epoch(net, optimizer, dataloader):
-    # raise NotImplementedError
+def train_one_epoch(model, optimizer, dataloader):
     loss_aggregator = UpdatingMean()
-
     # set to training mode
-    net.train()
-    # count = 0
-    for batch in tqdm(dataloader):
-        optimizer.zero_grad()
-        output = net.forward(batch[0].to(torch.device(CUDA_DEVICE)))
-        # output = net.forward(batch[0])
+    model.train()
 
-        # unlabeled_mask = (batch[1] != 99)
-        # print(output.shape,batch[1].shape)
+    for x, labels in tqdm(dataloader):
+        optimizer.zero_grad()
+        x = x.to(torch.device(CUDA_DEVICE))
+        labels = labels.to(torch.device(CUDA_DEVICE))
+
+        output = model.forward(x)
+
         # weights = torch.from_numpy(np.array([0.2, 1, 0.8])).float().to(torch.device(CUDA_DEVICE))
         # loss = F.cross_entropy(output, batch[1].to(torch.device(CUDA_DEVICE)), weight=weights, ignore_index=99,
         #                        reduction='mean')
-        loss = F.cross_entropy(output, batch[1].to(torch.device(CUDA_DEVICE)), ignore_index=99,
-                               reduction='mean')
-        # loss = F.cross_entropy(output, batch[1], reduction='mean')
-
-        # count += 1
-        # print(count)
-        # if(count%1000 == 0):
-        #     print("loss:",loss.data)
-
+        loss = F.cross_entropy(output, labels, reduction='mean')
         loss.backward()
         optimizer.step()
-        # wandb.log({"Training loss": loss})
-
         loss_aggregator.add(loss.item())
+        # wandb.log({"Training loss": loss})
 
     return loss_aggregator.mean()
 
 
-def run_validation_epoch(net, dataloader):
+def run_validation_epoch(model, dataloader):
     accuracy_aggregator = UpdatingMean()
     loss_aggregator = UpdatingMean()
     # Put the network in evaluation mode.
-    net.eval()
-    # Loop over batches.
-    for batch in tqdm(dataloader):
+    model.eval()
+
+    for x, labels in tqdm(dataloader):
+        x = x.to(torch.device(CUDA_DEVICE))
+        labels = labels.to(torch.device(CUDA_DEVICE))
+
         # Forward pass only.
-        output = net.forward(batch[0].to(torch.device(CUDA_DEVICE)))
+        output = model.forward(x)
 
         # Compute the accuracy using compute_accuracy.
-        accuracy = compute_accuracy(output, batch[1].to(torch.device(CUDA_DEVICE)))
+        accuracy = compute_accuracy(output, labels)
         # weights = torch.from_numpy(np.array([0.2, 1, 0.8])).float().to(torch.device(CUDA_DEVICE))
 
         # loss = F.cross_entropy(output, batch[1].to(torch.device(CUDA_DEVICE)),weight=weights, ignore_index=99, reduction='mean')
-        loss = F.cross_entropy(output, batch[1].to(torch.device(CUDA_DEVICE)), ignore_index=99, reduction='mean')
+        loss = F.cross_entropy(output, labels, reduction='mean')
 
 
         # Save accuracy value in the aggregator.
@@ -107,21 +111,21 @@ if __name__ == '__main__':
 
     # train
     device = torch.device(CUDA_DEVICE)
-    net = LSTM()
-    net.to(device)
+    model = LSTM()
+    model.to(device)
 
 
-    optimizer = Adam(net.parameters(), lr=Learning_rate, weight_decay=0.00005)
+    optimizer = Adam(model.parameters(), lr=Learning_rate, weight_decay=0.00005)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones = [50,100,150], gamma = 0.4, verbose=False)
 
     best_accuarcy = 0
     for epoch_idx in tqdm(range(NUM_EPOCHS)):
         # training part
-        loss = train_one_epoch(net, optimizer, train_dataloader)
+        loss = train_one_epoch(model, optimizer, train_dataloader)
         print('[Epoch %02d]Training Loss = %0.4f' % (epoch_idx + 1, loss))
 
         # validate part
-        val_acc, val_loss = run_validation_epoch(net, validate_dataloader)
+        val_acc, val_loss = run_validation_epoch(model, validate_dataloader)
         print('[Epoch %02d]Validating Acc.: %.4f%%, Loss:%.4f' % (epoch_idx + 1, val_acc * 100, val_loss))
 
         # wandb.log({"epoch": epoch_idx, "Validating loss": val_loss, "Validating acc.": val_acc})
@@ -131,7 +135,7 @@ if __name__ == '__main__':
         # save checkpoint
         checkpoint = {
             'epoch_idx': epoch_idx,
-            'net': net.state_dict(),
+            'net': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }
 
@@ -139,12 +143,12 @@ if __name__ == '__main__':
             best_accuarcy = val_acc
 
         if epoch_idx % 10 == 0:
-            # test_acc, test_loss = run_validation_epoch(net, test_dataloader)
+            # test_acc, test_loss = run_validation_epoch(model, test_dataloader)
             # print('[Epoch %02d] Test Acc.: %.4f' % (epoch_idx + 1, test_acc * 100) + '%')
             # wandb.log({"Testing loss": test_loss, "Test acc.": test_acc})
             dt = datetime.now()
             date = dt.strftime('%Y-%m-%d-%H-%M-%S')
-            torch.save(checkpoint, r'D:\Nianfang\II_Lab3\checkpoint' + os.sep + '{net.codename}_' + date + '_' + str(val_acc * 100) + '.pth')
+            torch.save(checkpoint, r'D:\Nianfang\II_Lab3\checkpoint' + os.sep + '{model.codename}_' + date + '_' + str(val_acc * 100) + '.pth')
 
     print('Best validating acc. %.4f%%', best_accuarcy)
     # wandb.log({
