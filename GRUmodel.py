@@ -15,20 +15,39 @@ from torch.autograd import Variable
 
 
 class GRU(nn.Module):
-    def __init__(self, input_size, output_size, hidden_dim, n_layers):
+    def __init__(self):
         super(GRU, self).__init__()
-        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_dim, num_layers=n_layers,dropout = 0.5, bidirectional=True)
-        self.relu = nn.ReLU()
+        input_size = 4
+        sequence_length = 71
+        output_size = 52
+        hidden_dim = 128
+        n_layers = 2
+        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_dim, num_layers=n_layers,batch_first= True, dropout = 0.5, bidirectional=True)
+        #self.relu = nn.ReLU()
         self.linear1 = nn.Linear(in_features=hidden_dim*2, out_features=output_size)
-        self.classifier = nn.Softmax()
+        #self.classifier = nn.Softmax()
+        
 
     def forward(self, X):
-        out,hidden = self.gru(X)
-        out = self.relu(out)
+       # print(X)
+        #h0 = torch.zeros(self.n_layer, X.size(0),self.hidden_size)
+        out,hidden = self.gru(X)        
+        #out = self.relu(out)
         out = out[:, -1, :]
         out = self.linear1(out)
         return out
     
+class UpdatingMean():
+    def __init__(self) -> None:
+        self.sum = 0
+        self.n = 0
+
+    def mean(self):
+        return self.sum / self.n
+
+    def add(self,loss):
+        self.sum += loss
+        self.n += 1
 
 
 '''class BaseModel(nn.Module):
