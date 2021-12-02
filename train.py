@@ -12,8 +12,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 
 from dataset import Dataset
-from GRU import GRU
-from networks import RNN,LSTM
+from networks import RNN,LSTM,GRU
 import pdb
 import wandb
 from datetime import datetime
@@ -39,7 +38,7 @@ def compute_accuracy(output,labels):
 
 def train_one_epoch(model,optimizer,dataloader):
     loss_aggregator = UpdatingMean()
-    
+    model.train()
     for x,y in tqdm(dataloader):
         
         optimizer.zero_grad()
@@ -68,7 +67,7 @@ def run_validation_epoch(net,dataloader):
     # Loop over batches.
     for batch in tqdm(dataloader):
         # Forward pass only.
-        output = net.forward(batch[0].to(cuda0))
+        output = net(batch[0].to(cuda0))
 
         # Compute the accuracy using compute_accuracy.
         accuracy = compute_accuracy(output, batch[1].to(cuda0))
@@ -90,8 +89,9 @@ if __name__ == '__main__':
     BATCH_SIZE = 1024
     NUM_WORKERS = 12
     Learning_rate = 0.0001
-    NUM_EPOCHS = 60
-    #####hyperparameters###########
+    NUM_EPOCHS = 40
+    Hidden_size = 128
+    ################################
     
     train_dataset = Dataset("../data",split='train')
     train_dataloader = DataLoader(
@@ -108,20 +108,23 @@ if __name__ == '__main__':
         num_workers = NUM_WORKERS,
         shuffle = False
     )
-    # model = RNN(4, 4, 2, 52).to(cuda0)
-    model = LSTM(4, 4, 2, 52).to(cuda0)
+    # model = RNN(4, Hidden_size, 2, 52).to(cuda0)
+    model = LSTM(4, Hidden_size, 2, 52, True).to(cuda0)
+    # model = GRU(4, Hidden_size, 2, 52, True).to(cuda0)
     
     
     optimizer = Adam(model.parameters(),lr = Learning_rate)
-    wandb.init(project = 'lab3',name = model.codename+'_'+str(Learning_rate))
+    wandb.init(project = 'lab3',name = 'Bi_'+model.codename+'_'+'hidden_size_'+str(Hidden_size))
     wandb.config.batch_size = BATCH_SIZE
     wandb.config.epochs = NUM_EPOCHS
     wandb.config.lr = Learning_rate
+    wandb.hidden_size = Hidden_size
+    
     
     best_accuarcy = 0
     for i in tqdm(range(NUM_EPOCHS)):
         loss = train_one_epoch(model, optimizer, train_dataloader)
-        print('[Epoch %02d]Training Loss = %0.4f' %(epoch_idx + 1, loss))
+        print('[Epoch %02d]Training Loss = %0.4f' %(i + 1, loss))
         
         #eval
         
@@ -131,11 +134,12 @@ if __name__ == '__main__':
         
         if val_acc > best_accuarcy:
             best_accuarcy = val_acc
-            # best_checkpoint = {
-            #     'epoch_idx': epoch_idx,
-            #     'net': net.state_dict(),
-            #     'optimizer': optimizer.state_dict(),
-            # }
+            best_checkpoint = {
+                'epoch_idx': i,
+                'net': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+            }
+            torch.save(best_checkpoint,f'checkpoints/bi/{model.codename}_'+'best'+'.pth')
         
         if i % 4 == 0:
             checkpoint = {
@@ -145,7 +149,7 @@ if __name__ == '__main__':
             }
             dt=datetime.now()
             date=dt.strftime('%Y-%m-%d-%H-%M-%S')
-            torch.save(checkpoint, f'checkpoints/{model.codename}_'+'epoch_'+str(i+1)+'.pth')
+            torch.save(checkpoint, f'checkpoints/bi/{model.codename}_'+'epoch_'+str(i+1)+str(date)+'.pth')
     
         
     print('Best validating acc. %.4f%%',best_accuarcy)

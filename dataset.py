@@ -91,7 +91,7 @@ def plot_bands(X):
 
 if __name__ == "__main__":
     #the path to your folder, not the file!
-    data_path = "..\data"
+    data_path = "../data"
     traindataset = Dataset(data_path,split='train')
     x,y = traindataset[0]
 
@@ -100,6 +100,8 @@ if __name__ == "__main__":
 
     inds = pix_counts.argsort()
     pix_counts_sorted = pix_counts[inds]
+    # import pdb
+    # pdb.set_trace()
     labels_sorted = labels[inds]
 
     label_names_sorted = [label_names[labels.tolist().index(x)] for x in labels_sorted]
