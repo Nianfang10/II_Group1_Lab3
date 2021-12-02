@@ -136,7 +136,7 @@ if __name__ == '__main__':
 
 
     # model = RNN(4, Hidden_size, 2, 52).to(cuda0)
-    model = LSTM(4, Hidden_size, 2, 52, True).to(cuda0)
+    model = LSTM(4, Hidden_size, 2, 13, True).to(cuda0)
     # model = GRU(4, Hidden_size, 2, 52, True).to(cuda0)
     
     

@@ -22,8 +22,8 @@ class Dataset(torch.utils.data.Dataset):
         else:
             self.num_pixels = target_shape[0]
 
-        label_idxs = np.unique(self.data["gt"])
-        self.n_classes = len(label_idxs)
+        self.label_idxs = np.unique(self.data["gt"])
+        self.n_classes = len(self.label_idxs)
         self.temporal_length = data_shape[-2]//time_downsample_factor
 
         print('Number of pixels: ', self.num_pixels)
@@ -41,6 +41,8 @@ class Dataset(torch.utils.data.Dataset):
 
         X = self.data["data"][idx]
         target = self.data["gt"][idx]
+        target = np.where(self.label_idxs==target)[0][0]
+        # print(target)
 
         # Convert numpy array to torch tensor
         X = torch.from_numpy(X)
@@ -92,6 +94,12 @@ if __name__ == "__main__":
     data_path = "../data/imgint_trainset_v2.hdf5"
     traindataset = Dataset(data_path)
     X,y = traindataset[0]
+
+    print(traindataset.label_idxs)
+    
+    for batch in traindataset:
+        pass
+    
 
     print(X.shape)
     print(y.shape)
