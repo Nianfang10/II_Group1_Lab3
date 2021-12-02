@@ -2,7 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils import data
+from torch.utils.data import DataLoader,random_split
 from torch.optim import Adam, lr_scheduler
 
 import torchvision
@@ -82,18 +83,43 @@ def run_validation_epoch(net,dataloader):
 
 
 if __name__ == '__main__':
-    torch.manual_seed(1)
-    torch.cuda.manual_seed(1)
+    random_seed = 1
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed)
+
+    
     cuda0 = torch.device('cuda:0')
     #####hyperparameters###########
     BATCH_SIZE = 1024
-    NUM_WORKERS = 12
+    NUM_WORKERS = 0
     Learning_rate = 0.0001
     NUM_EPOCHS = 40
     Hidden_size = 128
     ################################
     
-    train_dataset = Dataset("../data",split='train')
+    # train_dataset = Dataset("../data",split='train')
+    # train_dataloader = DataLoader(
+    #     train_dataset,
+    #     batch_size = BATCH_SIZE,
+    #     num_workers = NUM_WORKERS,
+    #     shuffle = True
+    # )
+    
+    # eval_dataset = Dataset("../data",split='val')
+    # eval_dataloader = DataLoader(
+    #     eval_dataset,
+    #     batch_size = BATCH_SIZE,
+    #     num_workers = NUM_WORKERS,
+    #     shuffle = False
+    # )
+
+    dataset = Dataset(path="../data/imgint_trainset_v2.hdf5")
+    train_val_split = [int(0.7*dataset.num_pixels),dataset.num_pixels-int(0.7*dataset.num_pixels)]
+    train_dataset, val_dataset = random_split(
+        dataset = dataset,
+        lengths=train_val_split
+    )
+
     train_dataloader = DataLoader(
         train_dataset,
         batch_size = BATCH_SIZE,
@@ -101,13 +127,14 @@ if __name__ == '__main__':
         shuffle = True
     )
     
-    eval_dataset = Dataset("../data",split='val')
     eval_dataloader = DataLoader(
-        eval_dataset,
+        val_dataset,
         batch_size = BATCH_SIZE,
         num_workers = NUM_WORKERS,
         shuffle = False
     )
+
+
     # model = RNN(4, Hidden_size, 2, 52).to(cuda0)
     model = LSTM(4, Hidden_size, 2, 52, True).to(cuda0)
     # model = GRU(4, Hidden_size, 2, 52, True).to(cuda0)
