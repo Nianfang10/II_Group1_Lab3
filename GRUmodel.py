@@ -22,9 +22,9 @@ class GRU(nn.Module):
         output_size = 52
         hidden_dim = 128
         n_layers = 2
-        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_dim, num_layers=n_layers,batch_first= True, dropout = 0.5, bidirectional=True)
+        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_dim, num_layers=n_layers,batch_first= True, dropout = 0.5, bidirectional=False)
         #self.relu = nn.ReLU()
-        self.linear1 = nn.Linear(in_features=hidden_dim*2, out_features=output_size)
+        self.linear1 = nn.Linear(in_features=hidden_dim, out_features=output_size)
         #self.classifier = nn.Softmax()
         
 
