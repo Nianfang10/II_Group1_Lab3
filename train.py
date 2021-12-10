@@ -37,7 +37,7 @@ def compute_accuracy(output,labels):
     return torch.mean((predictions == labels).float())
 
 
-def train_one_epoch(model,optimizer,dataloader):
+def train_one_epoch(model,optimizer,dataloader,weights):
     loss_aggregator = UpdatingMean()
     model.train()
     for x,y in tqdm(dataloader):
@@ -49,7 +49,7 @@ def train_one_epoch(model,optimizer,dataloader):
         
         output = model(x)
         # compute_accuracy(output,y)
-        loss = F.cross_entropy(output, y, reduction='mean')
+        loss = F.cross_entropy(output, y, reduction='mean', weight = weights)
         loss.backward()
         optimizer.step()
         loss_aggregator.add(loss.item())
@@ -82,6 +82,8 @@ def run_validation_epoch(net,dataloader):
     return accuracy_aggregator.mean(),loss_aggregator.mean()
 
 
+
+
 if __name__ == '__main__':
     random_seed = 1
     torch.manual_seed(random_seed)
@@ -91,8 +93,8 @@ if __name__ == '__main__':
     cuda0 = torch.device('cuda:0')
     #####hyperparameters###########
     BATCH_SIZE = 1024
-    NUM_WORKERS = 0
-    Learning_rate = 0.0001
+    NUM_WORKERS = 12
+    Learning_rate = 0.001
     NUM_EPOCHS = 40
     Hidden_size = 128
     ################################
@@ -133,24 +135,33 @@ if __name__ == '__main__':
         num_workers = NUM_WORKERS,
         shuffle = False
     )
+    
 
 
-    # model = RNN(4, Hidden_size, 2, 52).to(cuda0)
+    # model = RNN(4, Hidden_size, 2, 13).to(cuda0)
     model = LSTM(4, Hidden_size, 2, 13, True).to(cuda0)
-    # model = GRU(4, Hidden_size, 2, 52, True).to(cuda0)
+    # model = GRU(4, Hidden_size, 2, 13, True).to(cuda0)
     
     
     optimizer = Adam(model.parameters(),lr = Learning_rate)
-    wandb.init(project = 'lab3',name = 'Bi_'+model.codename+'_'+'hidden_size_'+str(Hidden_size))
+    
+    #get weights
+    gt_list = dataset.return_labels()
+    labels, pix_counts = np.unique(gt_list, return_counts=True)
+    weights = (1/pix_counts)/np.sum(1/pix_counts)
+    weights = torch.from_numpy(weights).float().to(cuda0)
+    
+    wandb.init(project = 'lab3',name = 'Weighted_Bi_'+model.codename+'_'+'hidden_size_'+str(Hidden_size))
     wandb.config.batch_size = BATCH_SIZE
     wandb.config.epochs = NUM_EPOCHS
     wandb.config.lr = Learning_rate
     wandb.hidden_size = Hidden_size
     
     
+    
     best_accuarcy = 0
     for i in tqdm(range(NUM_EPOCHS)):
-        loss = train_one_epoch(model, optimizer, train_dataloader)
+        loss = train_one_epoch(model, optimizer, train_dataloader, weights)
         print('[Epoch %02d]Training Loss = %0.4f' %(i + 1, loss))
         
         #eval
@@ -166,7 +177,7 @@ if __name__ == '__main__':
                 'net': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
-            torch.save(best_checkpoint,f'checkpoints/bi/{model.codename}_'+'best'+'.pth')
+            torch.save(best_checkpoint,f'checkpoints/weighted_bi/{model.codename}_'+'best'+'.pth')
         
         if i % 4 == 0:
             checkpoint = {
@@ -176,7 +187,7 @@ if __name__ == '__main__':
             }
             dt=datetime.now()
             date=dt.strftime('%Y-%m-%d-%H-%M-%S')
-            torch.save(checkpoint, f'checkpoints/bi/{model.codename}_'+'epoch_'+str(i+1)+str(date)+'.pth')
+            torch.save(checkpoint, f'checkpoints/weighted_bi/{model.codename}_'+'epoch_'+str(i+1)+str(date)+'.pth')
     
         
     print('Best validating acc. %.4f%%',best_accuarcy)

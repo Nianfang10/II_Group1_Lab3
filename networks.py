@@ -77,8 +77,8 @@ class GRU(nn.Module):
         self.bid = bidirectional
         
         if self.bid == True:
-            self.fc = nn.Linear(2*hidden_dim, n_layers)
-            raise NotImplementedError()
+            self.fc = nn.Linear(2*hidden_dim, output_size)
+            
 
     def forward(self, X):
         out,hidden = self.gru(X)
