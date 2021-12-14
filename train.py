@@ -90,10 +90,10 @@ if __name__ == '__main__':
     
     cuda0 = torch.device('cuda:0')
     #####hyperparameters###########
-    BATCH_SIZE = 1024
+    BATCH_SIZE = 256
     NUM_WORKERS = 0
-    Learning_rate = 0.0001
-    NUM_EPOCHS = 40
+    Learning_rate = 0.001
+    NUM_EPOCHS = 10
     Hidden_size = 128
     ################################
     
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     #     shuffle = False
     # )
 
-    dataset = Dataset(path="../data/imgint_trainset_v2.hdf5")
+    dataset = Dataset(path="D:/rushan/II/lab3/newdata/imgint_trainset_v2.hdf5")
     train_val_split = [int(0.7*dataset.num_pixels),dataset.num_pixels-int(0.7*dataset.num_pixels)]
     train_dataset, val_dataset = random_split(
         dataset = dataset,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     
     
     optimizer = Adam(model.parameters(),lr = Learning_rate)
-    wandb.init(project = 'lab3',name = 'Bi_'+model.codename+'_'+'hidden_size_'+str(Hidden_size))
+    wandb.init(project = 'lab3',name = 'Final_'+model.codename+'_'+'hidden_size_'+str(Hidden_size))
     wandb.config.batch_size = BATCH_SIZE
     wandb.config.epochs = NUM_EPOCHS
     wandb.config.lr = Learning_rate

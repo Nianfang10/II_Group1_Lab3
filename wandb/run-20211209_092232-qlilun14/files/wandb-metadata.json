@@ -1,0 +1,24 @@
+{
+    "os": "Windows-10-10.0.17763-SP0",
+    "python": "3.7.11",
+    "heartbeatAt": "2021-12-09T08:22:34.759305",
+    "startedAt": "2021-12-09T08:22:32.900276",
+    "docker": null,
+    "gpu": "Quadro P1000",
+    "gpu_count": 1,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "D:\\rushan\\II\\lab3\\II_Group1_Lab3\\train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/Nianfang10/II_Group1_Lab3.git",
+        "commit": "ca3c31e6461a422793f25db3aceb809530c67ca3"
+    },
+    "email": "ruswang@student.ethz.ch",
+    "root": "D:/rushan/II/lab3/II_Group1_Lab3",
+    "host": "PF-LAB13",
+    "username": "ruswang",
+    "executable": "C:\\Users\\ruswang\\.conda\\envs\\II_Group1\\python.exe"
+}

@@ -1,0 +1,1 @@
+{"Training loss": 0.16596008837223053, "_runtime": 44340, "_timestamp": 1639283273, "_step": 191530, "epoch": 9, "Validating loss": 0.19392324226761334, "Validating acc.": 0.9323819749071817, "Best acc.": 0.9323819749071817, "_wandb": {"runtime": 44338}}
