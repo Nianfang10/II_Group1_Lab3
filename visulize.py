@@ -1,14 +1,16 @@
 import numpy as np
 import h5py
 from PIL import Image
+import pdb
 
 # Open hdf5 file
-testset = "..\imgint_trainset.hdf5"
+testset = "../data/pred.hdf5"
 testset = h5py.File(testset, "r")
 
 # Read data shape and labels
-test_set_shape = testset["data"].shape
+test_set_shape = testset["data"].shape 
 testset_target = testset["gt"][...]
+
 
 labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
           26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 48, 49, 50, 51]
@@ -111,7 +113,7 @@ for i_x in range(target_map_RGB.shape[0]):
 
 
 img = Image.fromarray(np.uint8(target_map_RGB))
-img.save('gt_map.png')
+img.save('pred_map.png')
 
 # Visulize false composit image for the test region
 date = 56

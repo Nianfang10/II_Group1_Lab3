@@ -18,7 +18,7 @@ import pdb
 import wandb
 from datetime import datetime
 from train import UpdatingMean,compute_accuracy
-from sklearn.metrics import precision_recall_fscore_support, confusion_matrix, accuracy_score
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix, accuracy_score, classification_report
 
 
 def eval_on_test(net,dataloader,class_ids):
@@ -26,11 +26,13 @@ def eval_on_test(net,dataloader,class_ids):
     net.eval()
     true_label_list = []
     pred_label_list = []
+    target_names = ['Maize', 'Meadow', 'Pasture', 'Potatoes', 'Spelt', 'Sugar beet', 'Sunflowers', 'Vegetables', 'Vines', 'Wheat', 'Winter barley', 'Winter rapeseed', 'Winter wheat']
     for batch in tqdm(dataloader):
         
         x = batch[0].to(cuda0).squeeze(0)
         label = batch[1].to(cuda0).squeeze(0)
         output = net(x)
+        output = torch.nn.functional.log_softmax(output)
         #convert ids 0-12 to original index in the dataset 0-55
         
         output = torch.argmax(output, dim = 1)
@@ -49,17 +51,22 @@ def eval_on_test(net,dataloader,class_ids):
        
         # Save accuracy value in the aggregator.
         accuracy_aggregator.add(accuracy.item())
-        
+    
+    weight = [126545,  363550 ,  81047  ,  8580 ,  10343 ,  37218 ,  11157  , 47226, 6568 ,  16840 ,  46867  , 43239 , 127351]
+    weight = np.asarray(weight)
+    weight = weight/np.sum(weight)
     y_true = np.concatenate(true_label_list)
     y_pred = np.concatenate(pred_label_list)
     accuracy = accuracy_score(y_true,y_pred)
-    precision, recall, f1 = precision_recall_fscore_support(y_true,y_pred,average='macro')[:-1]
+    precision, recall, f1 = precision_recall_fscore_support(y_true,y_pred,average='micro')[:-1]
     Confusion_M = confusion_matrix(y_true, y_pred)
+    report = classification_report(y_true, y_pred,target_names=target_names)
     print("confusion matrix\n", Confusion_M)
     print("accuracy: ", accuracy)
     print("precision: ",precision)
     print("recall: ",recall)
     print("f1: ",f1)
+    print(report)
     return accuracy_aggregator.mean()
 
 
@@ -73,13 +80,12 @@ if __name__ == '__main__':
     #####hyperparameters###########
     BATCH_SIZE = 1
     NUM_WORKERS = 12
-    Learning_rate = 0.0001
-    NUM_EPOCHS = 40
     Hidden_size = 128
+    dropout = 0.3
     ################################
     
-    model = LSTM(4, Hidden_size, 2, 13, True)
-    model.load_state_dict(torch.load('./checkpoints/weighted_bi/LSTM_best.pth')['net'])
+    model = LSTM(4, Hidden_size, 2, 13, True, dropout=dropout)
+    model.load_state_dict(torch.load('./checkpoints/dropout/LSTM_epoch_9_dropout_0.3.pth')['net'])
     model.to(cuda0)
     
     testset =  Dataset(path="../data/imgint_testset_v2.hdf5", split='test')
